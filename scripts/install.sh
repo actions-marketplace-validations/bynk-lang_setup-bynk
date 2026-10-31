@@ -48,6 +48,16 @@ target_triple() {
 cmd_resolve() {
   local repo="${INPUT_REPOSITORY:?}" want="${INPUT_VERSION:-latest}" version target ext bindir
   target="$(target_triple)"
+
+  # A pin file holds one exact version; whitespace around it is ignored.
+  local file="${INPUT_VERSION_FILE:-}"
+  if [ -n "$file" ]; then
+    [ "$want" = latest ] || die "set version or version-file, not both"
+    [ -f "$file" ] || die "version-file ${file} does not exist"
+    want="$(tr -d '[:space:]' < "$file")"
+    [[ "$want" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]] \
+      || die "version-file ${file} must hold an exact version such as 0.404.0, not '${want}'"
+  fi
   case "$target" in
     *windows*) ext="zip" ;;
     *)         ext="tar.gz" ;;
@@ -57,8 +67,13 @@ cmd_resolve() {
     local api="https://api.github.com/repos/${repo}/releases/latest"
     local auth=()
     [ -n "${GH_TOKEN:-}" ] && auth=(-H "Authorization: Bearer ${GH_TOKEN}")
-    version="$(curl -fsSL "${auth[@]}" "$api" \
-      | grep -m1 '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')"
+    # Read the whole response before parsing it. Piping curl into a reader
+    # that stops early (`grep -m1`) fails curl with exit 23 under pipefail.
+    local release
+    release="$(curl -fsSL "${auth[@]}" "$api")" \
+      || die "could not fetch the latest release from ${repo}"
+    version="$(sed -n -E 's/.*"tag_name": *"([^"]+)".*/\1/p' <<<"$release")"
+    version="${version%%$'\n'*}"
     [ -n "$version" ] || die "could not resolve the latest release from ${repo}"
   else
     # Normalise "0.107.0" -> "v0.107.0"; leave an existing leading v alone.

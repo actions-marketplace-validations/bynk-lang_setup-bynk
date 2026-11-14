@@ -1,7 +1,7 @@
 # setup-bynk
 
-Install the [Bynk](https://github.com/bynk-lang/bynk) toolchain — `bynkc`, the
-`bynk` driver, and `bynkc-lsp` — on a GitHub Actions runner and add it to
+Install the [Bynk](https://github.com/bynk-lang/bynk) toolchain — `bynk` CLI and
+language server (`bynk-lsp`) — on a GitHub Actions runner and add it to
 `PATH`. Downloads the prebuilt release archive for the runner's OS/arch, verifies
 it against the release `SHA256SUMS`, and caches it in the Actions tool cache.
 
@@ -11,16 +11,18 @@ Supported runners: Linux (x86_64, aarch64), macOS (x86_64, aarch64), Windows
 ## Usage
 
 ```yaml
-- uses: bynk-lang/setup-bynk@v1
+- uses: bynk-lang/setup-bynk@3ee807123be2578fd5d5be518fbc2b489aef6171 # v2.0.1
   with:
     version: latest        # or an exact version like 0.377.2
-- run: bynkc --version
+- run: bynk --version
 ```
+
+> The org requires actions pinned to a full commit SHA, so these examples name the commit for `v2.0.1` with the version in a comment, which Dependabot reads to propose updates. To pin another release, find its commit with `git ls-remote https://github.com/bynk-lang/setup-bynk 'refs/tags/v*^{}'`.
 
 Pin an exact version for reproducible CI:
 
 ```yaml
-- uses: bynk-lang/setup-bynk@v1
+- uses: bynk-lang/setup-bynk@3ee807123be2578fd5d5be518fbc2b489aef6171 # v2.0.1
   with:
     version: 0.377.2
 ```
@@ -30,7 +32,7 @@ one and a tool can move it in one place (the org canary's bump pull requests
 do):
 
 ```yaml
-- uses: bynk-lang/setup-bynk@v1
+- uses: bynk-lang/setup-bynk@3ee807123be2578fd5d5be518fbc2b489aef6171 # v2.0.1
   with:
     version-file: BYNK_VERSION   # holds e.g. 0.377.2
 ```
@@ -43,7 +45,7 @@ do):
 | `version-file` | `""`           | A file holding an exact version, such as `BYNK_VERSION`, relative to the workspace. Whitespace around the version is ignored. Use this or `version`, not both. |
 | `repository`   | `bynk-lang/bynk` | The `owner/name` repo that publishes Bynk releases. |
 | `components`   | `""`           | Space-separated extras to keep (`lsp`). All binaries install regardless. |
-| `github-token` | `${{ github.token }}` | Token for API/download calls (avoids rate limits). |
+| `github-token` | `${{ github.token }}` | Token for the API calls that resolve and download the release. Downloads go only through the authenticated API, so it must not be empty. |
 
 ## Outputs
 
